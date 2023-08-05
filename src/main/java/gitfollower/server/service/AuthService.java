@@ -9,9 +9,9 @@ import gitfollower.server.exception.ConnectionException;
 import gitfollower.server.exception.NicknameDuplicatedException;
 import gitfollower.server.exception.UnAuthorizedGithubToken;
 import gitfollower.server.exception.UnvalidGithubNicknameException;
-import gitfollower.server.github.GithubUrl;
 import gitfollower.server.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +26,11 @@ import java.net.URL;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final GithubUrl githubApiUrl;
+    @Value("${github.prefix}")
+    private String githubPrefix;
+
+    @Value("${github.api-url}")
+    private String githubApiUrl;
     private final MemberRepository memberRepository;
 
     public ApiResponse<MemberAddRes> register(MemberAddReq req) {
@@ -88,7 +92,7 @@ public class AuthService {
 
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<JsonNode> response =
-                restTemplate.exchange(githubApiUrl.getGithubApiUrl(), HttpMethod.GET, requestEntity, JsonNode.class);
+                restTemplate.exchange(githubApiUrl, HttpMethod.GET, requestEntity, JsonNode.class);
         // 이미 깃허브 상에서 닉네임이 존재하는지 여부는 마쳤기 때문에
         // 이 과정에서 response.getStatusCode가 200이 아니라면 연결 문제라고 설정하였습니다.
         if (!isRestTemplateConnectionSuccessful(response)) {
@@ -108,6 +112,6 @@ public class AuthService {
     }
 
     private String generateGithubUrl(String username) {
-        return githubApiUrl.getGithubPrefix() + username;
+        return githubPrefix + username;
     }
 }
