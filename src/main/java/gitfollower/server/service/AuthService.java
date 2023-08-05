@@ -19,9 +19,7 @@ public class AuthService {
 
     public ApiResponse<MemberAddRes> register(MemberAddReq req) {
         // 회원 닉네임 검증
-        if (!isUniqueNickname(req.getNickname())) {
-            throw new NicknameDuplicatedException(NicknameDuplicatedException.message);
-        }
+        isUniqueNickname(req);
 
         // 회원을 만들어줘야 함
         Member newMember = Member.from(req);
@@ -33,7 +31,10 @@ public class AuthService {
         return new ApiResponse<>(200, result);
     }
 
-    private boolean isUniqueNickname(String nickname) {
-        return memberRepository.findByNickname(nickname).isEmpty();
+    private void isUniqueNickname(MemberAddReq req) {
+        memberRepository.findByNickname(req.getNickname())
+                .ifPresent(exist -> {
+                    throw new NicknameDuplicatedException(NicknameDuplicatedException.message);
+                });
     }
 }
