@@ -38,10 +38,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // "/register" 요청에 대해서만 CSRF 처리 비활성화
-                .csrf((csrf) -> csrf
-                        .ignoringRequestMatchers("/register")
-                )
+                .csrf(AbstractHttpConfigurer::disable) // csrf.disable()
                 .httpBasic(AbstractHttpConfigurer::disable) // httpBasic.disable()
                 .exceptionHandling(exception -> {
                     exception.authenticationEntryPoint(jwtAuthenticationEntryPoint);
