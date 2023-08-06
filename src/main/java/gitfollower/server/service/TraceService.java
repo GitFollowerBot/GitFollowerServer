@@ -30,8 +30,6 @@ public class TraceService {
         if (!isExistMember(member))
             return;
 
-        System.out.println("tracingFollowers 호출"); // 임시 테스트
-
         SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority("ROLE_USER");
         Authentication authentication = new UsernamePasswordAuthenticationToken(member.getNickname(), null,
                 Collections.singleton(simpleGrantedAuthority));
