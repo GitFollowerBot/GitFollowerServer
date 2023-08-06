@@ -1,7 +1,9 @@
 package gitfollower.server.controller;
 
 import gitfollower.server.dto.ApiResponse;
+import gitfollower.server.dto.LoginReq;
 import gitfollower.server.dto.MemberAddReq;
+import gitfollower.server.dto.TokenDto;
 import gitfollower.server.exception.*;
 import gitfollower.server.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,16 @@ public class AuthController {
             return new ApiResponse<>(error.getCode(), error.getBody());
         } catch (UnAuthorizedGithubToken e) {
             ErrorText error = ErrorText.UNAUTHORIZED_GITHUB_TOKEN;
+            return new ApiResponse<>(error.getCode(), error.getBody());
+        }
+    }
+
+    @PostMapping("/login")
+    public ApiResponse<?> login(@RequestBody LoginReq req) {
+        try {
+            return new ApiResponse<>(200, authService.login(req));
+        } catch (NicknameNotFoundException e) {
+            ErrorText error = ErrorText.NICKNAME_NOT_FOUND;
             return new ApiResponse<>(error.getCode(), error.getBody());
         }
     }
