@@ -47,7 +47,7 @@ public class GithubApi {
             GHUser githubUser = gitHub.getUser(loggedInMember.getNickname());
 
             addFollowAlert(loggedInMember, githubUser, result);
-            // unFollowAlert(loggedInMember, githubUser, result);
+            unFollowAlert(loggedInMember, githubUser, result);
 
         } catch (IOException e) {
             throw new ConnectionException(ConnectionException.message);
@@ -61,8 +61,7 @@ public class GithubApi {
     @Transactional
     void addFollowAlert(Member loggedInMember, GHUser githubUser,
                         HashMap<String, ArrayList<String>> map) throws IOException {
-        List<String> afterFollowers =
-                githubUser.getFollowers().stream().map(GHPerson::getLogin).toList();
+        List<String> afterFollowers = getAfterFollowersName(githubUser);
 
         System.out.println("========== [새로 추가된 유저 목록] ==========");
 
@@ -88,9 +87,50 @@ public class GithubApi {
 
             Info newInfo = Info.withFollowerAndOwner(existedMember, loggedInMember);
             infoRepository.save(newInfo);
-
         }
+
         System.out.println("=======================================");
+    }
+
+    @Transactional
+    void unFollowAlert(Member loggedInMember, GHUser githubUser,
+                       HashMap<String, ArrayList<String>> map) throws IOException {
+
+        List<String> afterFollowers = getAfterFollowersName(githubUser);
+        List<String> prevFollowers = getPrevFollowersName(loggedInMember);
+
+        System.out.println("========== [언팔로우된 유저 목록] ===========");
+
+        for (String nickname : prevFollowers) {
+            if (afterFollowers.contains(nickname))
+                continue;
+
+            GHUser destroyUser = gitHub.getUser(nickname);
+            memberRepository.findByNickname(destroyUser.getLogin()).ifPresent(
+                    infoRepository::deleteByFollower
+            );
+
+            System.out.println(nickname);
+
+            ArrayList<String> unfollowResultList = map.get("unfollow");
+            unfollowResultList.add(nickname);
+            map.put("unfollow", unfollowResultList);
+        }
+
+        System.out.println("=======================================");
+
+    }
+
+    private List<String> getPrevFollowersName(Member loggedInMember) {
+        return infoRepository
+                .findAllByOwner(loggedInMember)
+                .stream()
+                .map(Info::getFollower)
+                .toList().stream().map(Member::getNickname).toList();
+    }
+
+    private static List<String> getAfterFollowersName(GHUser githubUser) throws IOException {
+        return githubUser.getFollowers().stream().map(GHPerson::getLogin).toList();
     }
 
     private static boolean isAlreadyFollow(List<Info> savedFollowerInfo) {
