@@ -49,6 +49,7 @@ public class SecurityConfig {
                 })
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers( "/register").permitAll()
+                        .requestMatchers("/login").permitAll()
                         .anyRequest().authenticated())
                 .apply(new JwtSecurityConfig(tokenProvider));
         return http.build();

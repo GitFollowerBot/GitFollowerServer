@@ -1,18 +1,20 @@
 package gitfollower.server.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import gitfollower.server.dto.ApiResponse;
-import gitfollower.server.dto.MemberAddReq;
-import gitfollower.server.dto.MemberAddRes;
+import gitfollower.server.dto.*;
 import gitfollower.server.entity.Member;
-import gitfollower.server.exception.ConnectionException;
-import gitfollower.server.exception.NicknameDuplicatedException;
-import gitfollower.server.exception.UnAuthorizedGithubToken;
-import gitfollower.server.exception.UnvalidGithubNicknameException;
+import gitfollower.server.exception.*;
+import gitfollower.server.jwt.JwtFilter;
+import gitfollower.server.jwt.TokenProvider;
 import gitfollower.server.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -20,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Collections;
 
 @Service
 @Transactional
@@ -32,6 +35,7 @@ public class AuthService {
     @Value("${github.api-url}")
     private String githubApiUrl;
     private final MemberRepository memberRepository;
+    private final TokenProvider tokenProvider;
 
     public ApiResponse<MemberAddRes> register(MemberAddReq req) {
         // 회원 닉네임 검증
@@ -49,6 +53,23 @@ public class AuthService {
         return new ApiResponse<>(200, result);
     }
 
+    public TokenDto login(LoginReq req) {
+        SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority("ROLE_USER");
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                req.getNickname(),
+                null,
+                Collections.singleton(simpleGrantedAuthority)
+        );
+
+        setAuthenticationInSecurityContextHolder(authentication);
+
+        Member targetMember = memberRepository.findByNickname(req.getNickname())
+                .orElseThrow(() -> new NicknameNotFoundException(NicknameNotFoundException.message));
+
+        String jwt = tokenProvider.createToken(authentication, targetMember);
+        return TokenDto.withToken(jwt);
+    }
 
     private void checkUniqueNickname(String nickname) {
         memberRepository.findByNickname(nickname)
@@ -113,5 +134,11 @@ public class AuthService {
 
     private String generateGithubUrl(String username) {
         return githubPrefix + username;
+    }
+
+    // JwtFilter에서 썼던 표현 재활용
+    private static void setAuthenticationInSecurityContextHolder(Authentication authentication) {
+        SecurityContext context = SecurityContextHolder.getContext();
+        context.setAuthentication(authentication);
     }
 }
