@@ -1,9 +1,12 @@
 package gitfollower.server.controller;
 
 import gitfollower.server.dto.ApiResponse;
+import gitfollower.server.entity.Member;
 import gitfollower.server.exception.ConnectionException;
 import gitfollower.server.exception.ErrorText;
 import gitfollower.server.github.GithubApi;
+import gitfollower.server.service.TraceService;
+import gitfollower.server.util.MemberUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,12 +17,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class TraceController {
 
-    private final GithubApi githubApi;
+    private final TraceService traceService;
+    private final MemberUtil memberUtil;
 
     @GetMapping("/followers")
     public ApiResponse<?> followers() {
         try {
-            githubApi.getFollowers();
+            Member targetMember = memberUtil.getLoggedInMember();
+            traceService.triggerTracingFollowers(targetMember);
             return null;
         } catch (ConnectionException e) {
             ErrorText error = ErrorText.CONNECTION_ERROR;
