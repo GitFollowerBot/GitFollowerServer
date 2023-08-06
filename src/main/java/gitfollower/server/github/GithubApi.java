@@ -11,14 +11,18 @@ import org.kohsuke.github.GHPerson;
 import org.kohsuke.github.GHUser;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -28,6 +32,9 @@ public class GithubApi {
     private final MemberRepository memberRepository;
     private final InfoRepository infoRepository;
     private final MemberUtil memberUtil;
+
+    @Value("${discord.webhook}")
+    private String discord;
 
     private void githubConnection(String token) throws IOException {
         gitHub = new GitHubBuilder().withOAuthToken(token).build();
@@ -49,6 +56,7 @@ public class GithubApi {
             addFollowAlert(loggedInMember, githubUser, result);
             unFollowAlert(loggedInMember, githubUser, result);
 
+            discordAlert(result);
         } catch (IOException e) {
             throw new ConnectionException(ConnectionException.message);
         }
@@ -135,5 +143,56 @@ public class GithubApi {
 
     private static boolean isAlreadyFollow(List<Info> savedFollowerInfo) {
         return !savedFollowerInfo.isEmpty();
+    }
+
+    public void discordAlert(HashMap<String, ArrayList<String>> map) {
+        // follow와 unfollow 리스트 모두 비어 있을 때, 디스코드에 메시지를 보내지 않습니다.
+        if (map.get("follow").isEmpty() && map.get("unfollow").isEmpty()) {
+            return;
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // 메시지 내용을 구성할 StringBuilder 생성
+        StringBuilder contentBuilder = new StringBuilder();
+
+        // 신규 팔로워가 있을 경우, 해당 리스트를 문자열로 구성합니다.
+        ArrayList<String> newFollowers = map.get("follow");
+        if (!newFollowers.isEmpty()) {
+            contentBuilder.append("다음 분들이 팔로우 해주셨습니다! 🎉\n");
+            for (String follower : newFollowers) {
+                contentBuilder.append(follower).append("\n");
+            }
+        }
+
+        // 언팔로워가 있을 경우, 해당 리스트를 문자열로 구성합니다.
+        ArrayList<String> unfollowers = map.get("unfollow");
+        if (!unfollowers.isEmpty()) {
+            contentBuilder.append("다음 팔로워들을 잃었습니다 😭\n");
+            for (String unfollower : unfollowers) {
+                contentBuilder.append(unfollower).append("\n");
+            }
+        }
+
+        // 최종적으로 보낼 JSON 데이터를 구성합니다.
+        String jsonBody = "{\"content\": \"" + escapeJsonString(contentBuilder.toString()) + "\"}";
+
+        RestTemplate template = new RestTemplate();
+        HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
+
+        template.postForObject(discord, entity, String.class);
+    }
+
+    // 문자열 내의 이스케이프해야 할 문자를 처리합니다.
+    private String escapeJsonString(String jsonString) {
+        return jsonString
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\b", "\\b")
+                .replace("\f", "\\f")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }
