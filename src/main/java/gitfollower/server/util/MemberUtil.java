@@ -16,8 +16,14 @@ public class MemberUtil {
 
     public Member getLoggedInMember() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (isUnAuthorizedAuthentication(authentication))
+            return null;
         String nickname = authentication.getName();
         return memberRepository.findByNickname(nickname)
                 .orElseThrow(() -> new NicknameNotFoundException(NicknameNotFoundException.message));
+    }
+
+    private static boolean isUnAuthorizedAuthentication(Authentication authentication) {
+        return authentication == null;
     }
 }
