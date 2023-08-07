@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="header">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <!-- Custom styles for this template -->
+    <link href="/css/jumbotron-narrow.css" rel="stylesheet">
+    <link href="/css/register.css" rel="stylesheet">
+    <title>GitFollower - Register</title>
+</head>
+<body>
+<div class="container">
+    <div class="d-flex justify-content-center align-items-center flex-column">
+        <img src="/img/GitFollower.png" class="bg" alt="GitFollower Logo">
+        <form class="mt-4" method="POST" action="/register">
+            <div class="mb-3">
+                <label for="nickname" class="form-label">Github nickname</label>
+                <div class="nickname-box">
+                    <input type="text" class="form-control" id="nickname" placeholder="nickname" required name="nickname">
+                    <button type="submit" class="btn btn-primary">check</button>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="token" class="form-label">Github token</label>
+                <div class="token-box">
+                    <input type="text" class="form-control" id="token" placeholder="token" required name="token">
+                    <button type="submit" class="btn btn-primary">check</button>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Register</button>
+        </form>
+        <div class="error-message">
+            <p th:text="${errorMessage}"></p>
+        </div>
+    </div>
+</div> <!-- /container -->
+</body>
+</html>

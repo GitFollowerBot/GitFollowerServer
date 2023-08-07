@@ -19,10 +19,7 @@ public enum ErrorText {
     private final String cause;
     private final String message;
 
-    public Map<String, String> getBody() {
-        HashMap<String, String> body = new HashMap<>();
-        body.put(getCause(), getMessage());
-
-        return body;
+    public String getBody() {
+        return this.message;
     }
 }

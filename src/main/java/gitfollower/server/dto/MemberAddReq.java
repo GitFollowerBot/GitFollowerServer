@@ -10,7 +10,7 @@ public class MemberAddReq {
     private String nickname;
     private String token;
 
-    public MemberAddReq withNicknameAndToken(String nickname, String token) {
+    public static MemberAddReq withNicknameAndToken(String nickname, String token) {
         return new MemberAddReq(nickname, token);
     }
 
