@@ -7,6 +7,7 @@ import gitfollower.server.exception.*;
 import gitfollower.server.jwt.JwtFilter;
 import gitfollower.server.jwt.TokenProvider;
 import gitfollower.server.repository.MemberRepository;
+import gitfollower.server.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -15,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -36,12 +38,17 @@ public class AuthService {
     private String githubApiUrl;
     private final MemberRepository memberRepository;
     private final TokenProvider tokenProvider;
+    private final PasswordEncoder passwordEncoder;
+    private final TokenUtil tokenUtil;
 
     public ApiResponse<MemberAddRes> register(MemberAddReq req) {
         // 회원 닉네임 검증
         checkValidGithubUsername(req.getNickname());
         checkUniqueNickname(req.getNickname());
         checkTokenOwnerEqualsNickname(req.getToken(), req.getNickname());
+
+        String securedToken = passwordEncoder.encode(req.getToken());
+        req.updateTokenSecurity(securedToken); // DB에 유저의 토큰이 들어갈 때 암호화되도록 조치
 
         // 회원을 만들어줘야 함
         Member newMember = Member.from(req);
@@ -66,6 +73,9 @@ public class AuthService {
 
         Member targetMember = memberRepository.findByNickname(req.getNickname())
                 .orElseThrow(() -> new NicknameNotFoundException(NicknameNotFoundException.message));
+
+        // 토큰 원본 컴포넌트에 보관
+        tokenUtil.updateToken(req.getToken());
 
         String jwt = tokenProvider.createToken(authentication, targetMember);
         return TokenDto.withToken(jwt);

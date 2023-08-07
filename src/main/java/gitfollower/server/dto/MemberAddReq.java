@@ -18,4 +18,8 @@ public class MemberAddReq {
         this.nickname = nickname;
         this.token = token;
     }
+
+    public void updateTokenSecurity(String token) {
+        this.token = token;
+    }
 }

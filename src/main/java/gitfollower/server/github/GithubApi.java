@@ -6,6 +6,7 @@ import gitfollower.server.exception.ConnectionException;
 import gitfollower.server.repository.InfoRepository;
 import gitfollower.server.repository.MemberRepository;
 import gitfollower.server.util.MemberUtil;
+import gitfollower.server.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.kohsuke.github.GHPerson;
 import org.kohsuke.github.GHUser;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -32,6 +34,8 @@ public class GithubApi {
     private final MemberRepository memberRepository;
     private final InfoRepository infoRepository;
     private final MemberUtil memberUtil;
+    private final TokenUtil tokenUtil;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${discord.webhook}")
     private String discord;
@@ -49,7 +53,11 @@ public class GithubApi {
 
             Member loggedInMember = memberUtil.getLoggedInMember();
 
-            githubConnection(loggedInMember.getToken());
+            // 암호화 된 토큰 일치 검사
+            if (!passwordEncoder.matches(tokenUtil.getRawToken(), loggedInMember.getToken()))
+                return;
+
+            githubConnection(tokenUtil.getRawToken());
 
             GHUser githubUser = gitHub.getUser(loggedInMember.getNickname());
 
