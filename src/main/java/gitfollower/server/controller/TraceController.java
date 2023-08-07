@@ -8,10 +8,7 @@ import gitfollower.server.github.GithubApi;
 import gitfollower.server.service.TraceService;
 import gitfollower.server.util.MemberUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/")
@@ -38,5 +35,12 @@ public class TraceController {
         Member targetMember = memberUtil.getLoggedInMember();
         traceService.stop(targetMember);
         return new ApiResponse<>(200, "중지 완료");
+    }
+
+    @PostMapping("/restart")
+    public ApiResponse<String> restart() {
+        Member targetMember = memberUtil.getLoggedInMember();
+        traceService.restart(targetMember);
+        return new ApiResponse<>(200, "재시작 완료");
     }
 }
