@@ -12,7 +12,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.util.Collections;
 
 @Service
@@ -51,7 +50,13 @@ public class TraceService {
 
     @Transactional
     public void stop(Member targetMember) {
-        targetMember.updateTrace();
+        targetMember.updateTraceToFalse();
+        this.member = targetMember;
+    }
+
+    @Transactional
+    public void restart(Member targetMember) {
+        targetMember.updateTraceToTrue();
         this.member = targetMember;
     }
 }

@@ -37,7 +37,11 @@ public class Member {
         this.trace = true;
     }
 
-    public void updateTrace() {
+    public void updateTraceToFalse() {
         this.trace = false;
+    }
+
+    public void updateTraceToTrue() {
+        this.trace = true;
     }
 }
