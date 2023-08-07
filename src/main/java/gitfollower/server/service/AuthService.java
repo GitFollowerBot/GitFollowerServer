@@ -55,12 +55,16 @@ public class AuthService {
         String securedToken = passwordEncoder.encode(req.getToken());
         req.updateTokenSecurity(securedToken); // DB에 유저의 토큰이 들어갈 때 암호화되도록 조치
 
-        // 회원을 만들어줘야 함
-        Member newMember = Member.from(req);
-        memberRepository.save(newMember);
+        // 회원을 만들어줘야 함 (ifExistedMemberThenUpdateToken와 중복 기능을 하는데.. 개선 필요)
+        Member newMember = memberRepository.findByNickname(req.getNickname()).orElseGet(
+                () -> {
+                    Member newSaveMember = Member.from(req);
+                    // 제작자에게 회원가입 알림 디스코드로 알려주기 (일종의 모니터링)
+                    alertNewUserRegisterByDiscord(newSaveMember.getNickname());
+                    return memberRepository.save(newSaveMember);
+                }
+        );
 
-        // 제작자에게 회원가입 알림 디스코드로 알려주기 (일종의 모니터링)
-        alertNewUserRegisterByDiscord(newMember.getNickname());
 
         // 응답 던져주기
         MemberAddRes result = MemberAddRes.withNickname(newMember.getNickname());
