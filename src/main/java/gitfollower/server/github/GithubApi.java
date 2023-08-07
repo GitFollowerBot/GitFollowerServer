@@ -105,17 +105,19 @@ public class GithubApi {
             followResultList.add(nickname);
             map.put("follow", followResultList);
 
-            Member existedMember = memberRepository.findByNickname(nickname).orElseGet(() -> {
-                Member newMember = Member.withNicknameAndToken(nickname, null);
-                memberRepository.save(newMember);
-                return newMember;
-            });
+            Member existedMember = memberRepository.findByNickname(nickname).orElseGet(() -> createMember(nickname));
 
             Info newInfo = Info.withFollowerAndOwner(existedMember, loggedInMember);
             infoRepository.save(newInfo);
         }
 
         System.out.println("=======================================");
+    }
+
+    @Transactional
+    Member createMember(String nickname) {
+        Member newMember = Member.withNicknameAndToken(nickname, null);
+        return memberRepository.save(newMember);
     }
 
     @Transactional
