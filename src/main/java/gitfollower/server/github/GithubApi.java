@@ -3,10 +3,13 @@ package gitfollower.server.github;
 import gitfollower.server.entity.Info;
 import gitfollower.server.entity.Member;
 import gitfollower.server.exception.ConnectionException;
+import gitfollower.server.exception.MailingException;
 import gitfollower.server.repository.InfoRepository;
 import gitfollower.server.repository.MemberRepository;
 import gitfollower.server.util.MemberUtil;
 import gitfollower.server.util.TokenUtil;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.kohsuke.github.GHPerson;
 import org.kohsuke.github.GHUser;
@@ -16,6 +19,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,9 +41,13 @@ public class GithubApi {
     private final MemberUtil memberUtil;
     private final TokenUtil tokenUtil;
     private final PasswordEncoder passwordEncoder;
+    private final JavaMailSender javaMailSender;
 
     @Value("${discord.webhook}")
     private String discord;
+
+    @Value("${spring.mail.background}")
+    private String emailBackground;
 
     private void githubConnection(String token) throws IOException {
         gitHub = new GitHubBuilder().withOAuthToken(token).build();
@@ -64,7 +73,8 @@ public class GithubApi {
             addFollowAlert(loggedInMember, githubUser, result);
             unFollowAlert(loggedInMember, githubUser, result);
 
-            discordAlert(result);
+            // discordAlert(result);
+            emailAlert(githubUser, result);
         } catch (IOException e) {
             throw new ConnectionException(ConnectionException.message);
         }
@@ -155,7 +165,7 @@ public class GithubApi {
 
     public void discordAlert(HashMap<String, ArrayList<String>> map) {
         // follow와 unfollow 리스트 모두 비어 있을 때, 디스코드에 메시지를 보내지 않습니다.
-        if (map.get("follow").isEmpty() && map.get("unfollow").isEmpty()) {
+        if (isNotNewInformation(map)) {
             return;
         }
 
@@ -203,4 +213,94 @@ public class GithubApi {
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
     }
+
+    private void emailAlert(GHUser githubUser, HashMap<String, ArrayList<String>> result) {
+        // follow와 unfollow 리스트 모두 비어 있을 때, 디스코드에 메시지를 보내지 않습니다.
+        if (isNotNewInformation(result)) {
+            return;
+        }
+
+        try {
+            String receiveEmail = githubUser.getEmail();
+            MimeMessage newMessage = javaMailSender.createMimeMessage();
+            MimeMessageHelper messageHelper = new MimeMessageHelper(newMessage, true);
+
+            setEmailTarget(receiveEmail, messageHelper);
+            appendEmilTitle(messageHelper);
+
+            StringBuilder emailContentBuilder = new StringBuilder();
+
+            appendEmailBackgroundImage(emailContentBuilder);
+
+            // 추가: 팔로우와 언팔로우 정보를 이메일 내용에 추가
+            ArrayList<String> newFollowers = result.get("follow");
+            ArrayList<String> unfollowers = result.get("unfollow");
+
+            if (!newFollowers.isEmpty()) {
+                appendNewFollowersInfo(emailContentBuilder, newFollowers);
+            }
+
+            if (!unfollowers.isEmpty()) {
+                appendUnFollowersInfo(emailContentBuilder, unfollowers);
+            }
+
+            messageHelper.setText(emailContentBuilder.toString(), true);
+            javaMailSender.send(newMessage);
+        } catch (MessagingException e) {
+            throw new MailingException(MailingException.message);
+        } catch (IOException e) {
+            throw new ConnectionException(ConnectionException.message);
+        }
+    }
+
+    private static boolean isNotNewInformation(HashMap<String, ArrayList<String>> result) {
+        return result.get("follow").isEmpty() && result.get("unfollow").isEmpty();
+    }
+
+    private void appendUnFollowersInfo(StringBuilder emailContentBuilder, ArrayList<String> unfollowers) {
+        emailContentBuilder.append("<h3>😭 다음 팔로워들을 잃었습니다 😭</h3>\n");
+        emailContentBuilder.append(convertUnfollowersToString(unfollowers));
+    }
+
+    private void appendNewFollowersInfo(StringBuilder emailContentBuilder, ArrayList<String> newFollowers) {
+        emailContentBuilder.append("<h3>🎉 다음 분들이 팔로우 해주셨습니다! 🎉</h3>\n");
+        emailContentBuilder.append(convertFollowersToString(newFollowers));
+    }
+
+    private static void setEmailTarget(String receiveEmail, MimeMessageHelper messageHelper) throws MessagingException {
+        messageHelper.setTo(receiveEmail);
+    }
+
+    private static void appendEmilTitle(MimeMessageHelper messageHelper) throws MessagingException {
+        messageHelper.setSubject("📢 [GitFollower] 새로운 변경 내역입니다. 📢");
+    }
+
+    private void appendEmailBackgroundImage(StringBuilder emailContentBuilder) {
+        emailContentBuilder.append("<img src=\"" +
+                emailBackground +
+                "\" width=\"700\" height=\"200\" style=\"display: block;\"></img>\n\n"); // 이미지 URL 및 스타일 적용
+    }
+
+
+    private String convertFollowersToString(List<String> followers) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<ul>");
+        for (String follower : followers) {
+            sb.append("<li>").append(follower).append("</li>");
+        }
+        sb.append("</ul>");
+        return sb.toString().trim(); // trim() 메서드로 빈 줄 제거
+    }
+
+    private String convertUnfollowersToString(List<String> unfollowers) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<ul>");
+        for (String unfollower : unfollowers) {
+            sb.append("<li>").append(unfollower).append("</li>");
+        }
+        sb.append("</ul>");
+        return sb.toString().trim(); // trim() 메서드로 빈 줄 제거
+    }
+
+
 }
