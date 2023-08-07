@@ -42,4 +42,9 @@ public class Member {
     public void updateTraceToTrue() {
         this.trace = true;
     }
+
+    public void updateToken(String token) {
+        this.token = token;
+    }
+
 }
