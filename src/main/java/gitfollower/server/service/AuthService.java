@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gitfollower.server.dto.*;
 import gitfollower.server.entity.Member;
 import gitfollower.server.exception.*;
-import gitfollower.server.jwt.JwtFilter;
 import gitfollower.server.jwt.TokenProvider;
 import gitfollower.server.repository.MemberRepository;
 import gitfollower.server.util.TokenUtil;
@@ -24,6 +23,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 
 @Service
@@ -36,6 +36,10 @@ public class AuthService {
 
     @Value("${github.api-url}")
     private String githubApiUrl;
+
+    @Value("${discord.owner}")
+    private String discordOwnerUrl;
+
     private final MemberRepository memberRepository;
     private final TokenProvider tokenProvider;
     private final PasswordEncoder passwordEncoder;
@@ -54,10 +58,30 @@ public class AuthService {
         Member newMember = Member.from(req);
         memberRepository.save(newMember);
 
+        // 제작자에게 회원가입 알림 디스코드로 알려주기 (일종의 모니터링)
+        alertNewUserRegisterByDiscord(newMember.getNickname());
+
         // 응답 던져주기
         MemberAddRes result = MemberAddRes.withNickname(newMember.getNickname());
 
         return new ApiResponse<>(200, result);
+    }
+
+    private void alertNewUserRegisterByDiscord(String nickname) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // 메시지 내용을 구성할 StringBuilder 생성
+        StringBuilder contentBuilder = new StringBuilder();
+        contentBuilder.append("신규 유저가 가입했습니다 : " + nickname);
+
+        // 최종적으로 보낼 JSON 데이터를 구성합니다.
+        String jsonBody = "{\"content\": \"" + contentBuilder.toString() + "\"}";
+
+        RestTemplate template = new RestTemplate();
+        HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
+
+        template.postForObject(discordOwnerUrl, entity, String.class);
     }
 
     public TokenDto login(LoginReq req) {
