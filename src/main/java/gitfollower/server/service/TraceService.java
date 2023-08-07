@@ -10,6 +10,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -27,7 +28,7 @@ public class TraceService {
 
     @Scheduled(fixedRate = 5000, initialDelay = 3000)
     public void tracingFollowers() {
-        if (!isExistMember(member))
+        if (!isExistMember(member) || !member.isTrace())
             return;
 
         SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority("ROLE_USER");
@@ -46,5 +47,11 @@ public class TraceService {
     private static void setAuthenticationInSecurityContextHolder(Authentication authentication) {
         SecurityContext context = SecurityContextHolder.getContext();
         context.setAuthentication(authentication);
+    }
+
+    @Transactional
+    public void stop(Member targetMember) {
+        targetMember.updateTrace();
+        this.member = targetMember;
     }
 }

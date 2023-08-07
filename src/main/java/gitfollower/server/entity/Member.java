@@ -21,6 +21,8 @@ public class Member {
 
     private String token;
 
+    private boolean trace;
+
     public static Member withNicknameAndToken(String nickname, String token) {
         return new Member(nickname, token);
     }
@@ -32,5 +34,10 @@ public class Member {
     private Member(String nickname, String token) {
         this.nickname = nickname;
         this.token = token;
+        this.trace = true;
+    }
+
+    public void updateTrace() {
+        this.trace = false;
     }
 }
