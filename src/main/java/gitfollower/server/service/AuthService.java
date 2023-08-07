@@ -25,6 +25,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -48,8 +49,8 @@ public class AuthService {
     public ApiResponse<MemberAddRes> register(MemberAddReq req) {
         // 회원 닉네임 검증
         checkValidGithubUsername(req.getNickname());
-        checkUniqueNickname(req.getNickname());
         checkTokenOwnerEqualsNickname(req.getToken(), req.getNickname());
+        ifExistedMemberThenUpdateToken(req); // 이미 다른 사람에 의해 등록된 멤버 또는 등록된 멤버라면 토큰 업데이트 진행
 
         String securedToken = passwordEncoder.encode(req.getToken());
         req.updateTokenSecurity(securedToken); // DB에 유저의 토큰이 들어갈 때 암호화되도록 조치
@@ -105,11 +106,15 @@ public class AuthService {
         return TokenDto.withToken(jwt);
     }
 
-    private void checkUniqueNickname(String nickname) {
-        memberRepository.findByNickname(nickname)
-                .ifPresent(exist -> {
-                    throw new NicknameDuplicatedException(NicknameDuplicatedException.message);
-                });
+    private void ifExistedMemberThenUpdateToken(MemberAddReq req) {
+        Optional<Member> existingMemberOptional = memberRepository.findByNickname(req.getNickname());
+
+        existingMemberOptional.ifPresent(existingMember -> {
+            if (existingMember.getToken().isEmpty()) {
+                existingMember.updateToken(req.getToken());
+            }
+        });
+
     }
 
     private void checkValidGithubUsername(String username) {
