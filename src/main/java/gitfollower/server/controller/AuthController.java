@@ -7,36 +7,43 @@ import gitfollower.server.dto.TokenDto;
 import gitfollower.server.exception.*;
 import gitfollower.server.service.AuthService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
 
-@RestController
+@Controller
 @RequestMapping("/")
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
 
+    @GetMapping("/register")
+    public String getRegister() {
+        return "register";
+    }
+
     @PostMapping("/register")
-    public ApiResponse<?> register(@RequestBody MemberAddReq req) {
+    public String register(@RequestParam String nickname, @RequestParam String token, Model model) {
         try {
-            return authService.register(req);
+            MemberAddReq req = MemberAddReq.withNicknameAndToken(nickname, token);
+            authService.register(req);
+            return "redirect:/trace";
         } catch (ConnectionException e) {
             ErrorText error = ErrorText.CONNECTION_ERROR;
-            return new ApiResponse<>(error.getCode(), error.getBody());
+            model.addAttribute("errorMessage", error.getBody());
         }
         catch (UnvalidGithubNicknameException e) {
             ErrorText error = ErrorText.UNVALID_GITHUB_USERNAME;
-            return new ApiResponse<>(error.getCode(), error.getBody());
+            model.addAttribute("errorMessage", error.getBody());
         }
         catch (NicknameDuplicatedException e) {
             ErrorText error = ErrorText.NICKNAME_DUPLICATE;
-            return new ApiResponse<>(error.getCode(), error.getBody());
+            model.addAttribute("errorMessage", error.getBody());
         } catch (UnAuthorizedGithubToken e) {
             ErrorText error = ErrorText.UNAUTHORIZED_GITHUB_TOKEN;
-            return new ApiResponse<>(error.getCode(), error.getBody());
+            model.addAttribute("errorMessage", error.getBody());
         }
+        return "register";
     }
 
     @PostMapping("/login")

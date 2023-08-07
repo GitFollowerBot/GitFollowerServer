@@ -4,6 +4,7 @@ import gitfollower.server.jwt.JwtAccessDeniedHandler;
 import gitfollower.server.jwt.JwtAuthenticationEntryPoint;
 import gitfollower.server.jwt.TokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -50,6 +51,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers( "/register").permitAll()
                         .requestMatchers("/login").permitAll()
+                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+                        .requestMatchers("/img/**").permitAll()
                         .anyRequest().authenticated())
                 .apply(new JwtSecurityConfig(tokenProvider));
         return http.build();
