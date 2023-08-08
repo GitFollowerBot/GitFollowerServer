@@ -4,7 +4,6 @@ import gitfollower.server.dto.ApiResponse;
 import gitfollower.server.entity.Member;
 import gitfollower.server.exception.ConnectionException;
 import gitfollower.server.exception.ErrorText;
-import gitfollower.server.github.GithubApi;
 import gitfollower.server.service.TraceService;
 import gitfollower.server.util.MemberUtil;
 import lombok.RequiredArgsConstructor;
