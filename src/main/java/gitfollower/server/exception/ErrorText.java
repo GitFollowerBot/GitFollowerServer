@@ -3,9 +3,6 @@ package gitfollower.server.exception;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Getter
 @AllArgsConstructor
 public enum ErrorText {

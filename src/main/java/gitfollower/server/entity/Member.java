@@ -1,7 +1,6 @@
 package gitfollower.server.entity;
 
 import gitfollower.server.dto.MemberAddReq;
-import gitfollower.server.dto.MemberAddRes;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
