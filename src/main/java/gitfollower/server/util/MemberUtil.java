@@ -1,7 +1,7 @@
 package gitfollower.server.util;
 
 import gitfollower.server.entity.Member;
-import gitfollower.server.exception.NicknameNotFoundException;
+import gitfollower.server.exception.custom.NicknameNotFoundException;
 import gitfollower.server.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -20,7 +20,7 @@ public class MemberUtil {
             return null;
         String nickname = authentication.getName();
         return memberRepository.findByNickname(nickname)
-                .orElseThrow(() -> new NicknameNotFoundException(NicknameNotFoundException.message));
+                .orElseThrow(NicknameNotFoundException::new);
     }
 
     private static boolean isUnAuthorizedAuthentication(Authentication authentication) {

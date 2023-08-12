@@ -2,8 +2,8 @@ package gitfollower.server.github;
 
 import gitfollower.server.entity.Info;
 import gitfollower.server.entity.Member;
-import gitfollower.server.exception.ConnectionException;
-import gitfollower.server.exception.MailingException;
+import gitfollower.server.exception.custom.ConnectionException;
+import gitfollower.server.exception.custom.MailingException;
 import gitfollower.server.repository.InfoRepository;
 import gitfollower.server.repository.MemberRepository;
 import gitfollower.server.util.MemberUtil;
@@ -76,7 +76,7 @@ public class GithubApi {
             // discordAlert(result);
             emailAlert(githubUser, result);
         } catch (IOException e) {
-            throw new ConnectionException(ConnectionException.message);
+            throw new ConnectionException();
         }
     }
 
@@ -249,9 +249,9 @@ public class GithubApi {
             messageHelper.setText(emailContentBuilder.toString(), true);
             javaMailSender.send(newMessage);
         } catch (MessagingException e) {
-            throw new MailingException(MailingException.message);
+            throw new MailingException();
         } catch (IOException e) {
-            throw new ConnectionException(ConnectionException.message);
+            throw new ConnectionException();
         }
     }
 

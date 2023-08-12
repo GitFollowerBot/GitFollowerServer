@@ -6,14 +6,14 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class MemberAddRes {
+public class MemberAddResponse {
     private String nickname;
 
-    public static MemberAddRes withNickname(String nickname) {
-        return new MemberAddRes(nickname);
+    public static MemberAddResponse withNickname(String nickname) {
+        return new MemberAddResponse(nickname);
     }
 
-    private MemberAddRes(String nickname) {
+    private MemberAddResponse(String nickname) {
         this.nickname = nickname;
     }
 }

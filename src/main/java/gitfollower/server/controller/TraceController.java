@@ -1,12 +1,14 @@
 package gitfollower.server.controller;
 
-import gitfollower.server.dto.ApiResponse;
+import gitfollower.server.dto.global.ApiResponse;
+import gitfollower.server.dto.global.ApiSuccessResponse;
 import gitfollower.server.entity.Member;
-import gitfollower.server.exception.ConnectionException;
-import gitfollower.server.exception.ErrorText;
 import gitfollower.server.service.TraceService;
 import gitfollower.server.util.MemberUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,28 +20,41 @@ public class TraceController {
     private final MemberUtil memberUtil;
 
     @GetMapping("/followers")
-    public ApiResponse<?> followers() {
-        try {
-            Member targetMember = memberUtil.getLoggedInMember();
-            traceService.triggerTracingFollowers(targetMember);
-            return null;
-        } catch (ConnectionException e) {
-            ErrorText error = ErrorText.CONNECTION_ERROR;
-            return new ApiResponse<>(error.getCode(), error.getBody());
-        }
+    public ResponseEntity<ApiSuccessResponse<String>> followers(HttpServletRequest request) {
+        Member targetMember = memberUtil.getLoggedInMember();
+        traceService.triggerTracingFollowers(targetMember);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiSuccessResponse.of(
+                        HttpStatus.OK,
+                        request.getServletPath(),
+                        "완료"
+                ));
     }
 
     @DeleteMapping("/stop")
-    public ApiResponse<String> stop() {
+    public ResponseEntity<ApiSuccessResponse<String>> stop(HttpServletRequest request) {
         Member targetMember = memberUtil.getLoggedInMember();
         traceService.stop(targetMember);
-        return new ApiResponse<>(200, "중지 완료");
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiSuccessResponse.of(
+                        HttpStatus.OK,
+                        request.getServletPath(),
+                        "중지 완료"
+                ));
     }
 
     @PostMapping("/restart")
-    public ApiResponse<String> restart() {
+    public ResponseEntity<ApiSuccessResponse<String>> restart(HttpServletRequest request) {
         Member targetMember = memberUtil.getLoggedInMember();
         traceService.restart(targetMember);
-        return new ApiResponse<>(200, "재시작 완료");
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiSuccessResponse.of(
+                        HttpStatus.OK,
+                        request.getServletPath(),
+                        "재시작 완료"
+                ));
     }
 }

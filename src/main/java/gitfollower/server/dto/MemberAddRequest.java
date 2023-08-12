@@ -6,15 +6,15 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class MemberAddReq {
+public class MemberAddRequest {
     private String nickname;
     private String token;
 
-    public static MemberAddReq withNicknameAndToken(String nickname, String token) {
-        return new MemberAddReq(nickname, token);
+    public static MemberAddRequest withNicknameAndToken(String nickname, String token) {
+        return new MemberAddRequest(nickname, token);
     }
 
-    private MemberAddReq(String nickname, String token) {
+    private MemberAddRequest(String nickname, String token) {
         this.nickname = nickname;
         this.token = token;
     }

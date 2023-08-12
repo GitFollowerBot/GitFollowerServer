@@ -1,6 +1,6 @@
 package gitfollower.server.entity;
 
-import gitfollower.server.dto.MemberAddReq;
+import gitfollower.server.dto.MemberAddRequest;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -24,7 +24,7 @@ public class Member {
         return new Member(nickname, token);
     }
 
-    public static Member from(MemberAddReq req) {
+    public static Member from(MemberAddRequest req) {
         return new Member(req.getNickname(), req.getToken());
     }
 

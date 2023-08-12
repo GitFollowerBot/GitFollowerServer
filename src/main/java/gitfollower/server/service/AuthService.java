@@ -3,7 +3,10 @@ package gitfollower.server.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import gitfollower.server.dto.*;
 import gitfollower.server.entity.Member;
-import gitfollower.server.exception.*;
+import gitfollower.server.exception.custom.ConnectionException;
+import gitfollower.server.exception.custom.NicknameNotFoundException;
+import gitfollower.server.exception.custom.UnvalidGithubToken;
+import gitfollower.server.exception.custom.UnvalidGithubNicknameException;
 import gitfollower.server.jwt.TokenProvider;
 import gitfollower.server.repository.MemberRepository;
 import gitfollower.server.util.TokenUtil;
@@ -45,7 +48,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final TokenUtil tokenUtil;
 
-    public ApiResponse<MemberAddRes> register(MemberAddReq req) {
+    public MemberAddResponse register(MemberAddRequest req) {
         // 회원 닉네임 검증
         checkValidGithubUsername(req.getNickname());
         checkTokenOwnerEqualsNickname(req.getToken(), req.getNickname());
@@ -66,9 +69,7 @@ public class AuthService {
 
 
         // 응답 던져주기
-        MemberAddRes result = MemberAddRes.withNickname(newMember.getNickname());
-
-        return new ApiResponse<>(200, result);
+        return MemberAddResponse.withNickname(newMember.getNickname());
     }
 
     private void alertNewUserRegisterByDiscord(String nickname) {
@@ -100,7 +101,7 @@ public class AuthService {
         setAuthenticationInSecurityContextHolder(authentication);
 
         Member targetMember = memberRepository.findByNickname(req.getNickname())
-                .orElseThrow(() -> new NicknameNotFoundException(NicknameNotFoundException.message));
+                .orElseThrow(NicknameNotFoundException::new);
 
         // 토큰 원본 컴포넌트에 보관
         tokenUtil.updateToken(req.getToken());
@@ -109,7 +110,7 @@ public class AuthService {
         return TokenDto.withToken(jwt);
     }
 
-    private void ifExistedMemberThenUpdateToken(MemberAddReq req) {
+    private void ifExistedMemberThenUpdateToken(MemberAddRequest req) {
         Optional<Member> existingMemberOptional = memberRepository.findByNickname(req.getNickname());
 
         existingMemberOptional.ifPresent(existingMember -> {
@@ -129,11 +130,11 @@ public class AuthService {
 
             int responseCode = gitConnection.getResponseCode();
             if (!isResponseCodeSuccessful(responseCode))
-                throw new UnvalidGithubNicknameException(UnvalidGithubNicknameException.message);
+                throw new UnvalidGithubNicknameException();
 
             gitConnection.disconnect();
         } catch (IOException e) {
-            throw new ConnectionException(ConnectionException.message);
+            throw new ConnectionException();
         }
     }
 
@@ -145,7 +146,7 @@ public class AuthService {
         ResponseEntity<JsonNode> response = getResponseInGithubUsingToken(token);
         JsonNode responseBody = response.getBody();
         if (responseBody == null || !responseBody.has("login") || !responseBody.get("login").asText().equals(nickname)) {
-            throw new UnAuthorizedGithubToken(UnAuthorizedGithubToken.message);
+            throw new UnvalidGithubToken();
         }
     }
 
@@ -159,7 +160,7 @@ public class AuthService {
         // 이미 깃허브 상에서 닉네임이 존재하는지 여부는 마쳤기 때문에
         // 이 과정에서 response.getStatusCode가 200이 아니라면 연결 문제라고 설정하였습니다.
         if (!isRestTemplateConnectionSuccessful(response)) {
-            throw new ConnectionException(ConnectionException.message);
+            throw new ConnectionException();
         }
         return response;
     }
