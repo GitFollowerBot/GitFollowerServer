@@ -20,6 +20,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -41,7 +42,7 @@ public class GithubApi {
     private final MemberUtil memberUtil;
     private final TokenUtil tokenUtil;
     private final PasswordEncoder passwordEncoder;
-    private final JavaMailSender javaMailSender;
+    private final JavaMailSender javaMailSender = new JavaMailSenderImpl(); // 오류 있음
 
     @Value("${discord.webhook}")
     private String discord;
@@ -73,8 +74,8 @@ public class GithubApi {
             addFollowAlert(loggedInMember, githubUser, result);
             unFollowAlert(loggedInMember, githubUser, result);
 
-            // discordAlert(result);
-            emailAlert(githubUser, result);
+            discordAlert(result);
+            // emailAlert(githubUser, result);
         } catch (IOException e) {
             throw new ConnectionException();
         }
@@ -85,8 +86,8 @@ public class GithubApi {
     }
 
     @Transactional
-    void addFollowAlert(Member loggedInMember, GHUser githubUser,
-                        HashMap<String, ArrayList<String>> map) throws IOException {
+    public void addFollowAlert(Member loggedInMember, GHUser githubUser,
+                               HashMap<String, ArrayList<String>> map) throws IOException {
         List<String> afterFollowers = getAfterFollowersName(githubUser);
 
         System.out.println("========== [새로 추가된 유저 목록] ==========");
@@ -115,14 +116,14 @@ public class GithubApi {
     }
 
     @Transactional
-    Member createMember(String nickname) {
+    public Member createMember(String nickname) {
         Member newMember = Member.withNicknameAndToken(nickname, null);
         return memberRepository.save(newMember);
     }
 
     @Transactional
-    void unFollowAlert(Member loggedInMember, GHUser githubUser,
-                       HashMap<String, ArrayList<String>> map) throws IOException {
+    public void unFollowAlert(Member loggedInMember, GHUser githubUser,
+                              HashMap<String, ArrayList<String>> map) throws IOException {
 
         List<String> afterFollowers = getAfterFollowersName(githubUser);
         List<String> prevFollowers = getPrevFollowersName(loggedInMember);

@@ -7,7 +7,7 @@ public class GeneralException extends RuntimeException {
 
     private final ErrorCode errorCode;
 
-    public GeneralException(ErrorCode errorCode) {
+    protected GeneralException(ErrorCode errorCode) {
         super();
         this.errorCode = errorCode;
     }
